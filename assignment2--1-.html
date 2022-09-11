@@ -412,9 +412,8 @@ sum(x^100)</code></pre>
 S = \frac{1}{1\cdot 2}+\frac{1}{2 \cdot 3}+...+\frac{1}{100\cdot 101}
 \]</span></p>
 <pre class="r"><code>x &lt;- c(1:100)
-y &lt;- c(2:101)
-sum(1/(x+y))</code></pre>
-<pre><code>## [1] 2.289317</code></pre>
+sum(1/(x*(x+1)))</code></pre>
+<pre><code>## [1] 0.990099</code></pre>
 <ol start="4" style="list-style-type: decimal">
 <li>Calculate:</li>
 </ol>
@@ -423,8 +422,8 @@ S = \frac{1}{1\cdot 2 \cdot 3}+\frac{1}{2 \cdot 3 \cdot
 4}+...+\frac{1}{100\cdot 101 \cdot 102}
 \]</span></p>
 <pre class="r"><code>x &lt;- c(1:100)
-sum(1/(x+(x+1)+(x+2)))</code></pre>
-<pre><code>## [1] 1.399093</code></pre>
+sum(1/(x*(x+1)*(x+2)))</code></pre>
+<pre><code>## [1] 0.2499515</code></pre>
 <ol start="5" style="list-style-type: decimal">
 <li>Calculate:</li>
 </ol>
