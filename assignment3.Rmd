@@ -79,8 +79,11 @@ names(df) <- toupper(names(df))
 
 8. Find the average number of cases per day. Find the maximum cases a day.  
 ```{r}
-df1 <- aggregate(CASES~DATE,df,mean)
-df1f <-df1[order(-df1$CASES),]
+df1 <- mean(df$CASES)
+df1
+```
+```{r}
+df1f <- max(df$CASES)
 df1f
 ```
 
@@ -106,7 +109,7 @@ names(df3)
 -  `no_death` if there is no death that day
 ```{r}
 df3$death2 <- ifelse(df3$DEATHS==0,'no_death','has_death')
-df3
+table(df3$death2)
 ```
 
 Find the frequency and relative frequency of `no_death` and `has_death`. 
@@ -131,7 +134,7 @@ quantile(df3$DEATHS)
 - `high_death` if the number of deaths greater than Q3
 ```{r}
 df3$death3 <- ifelse(df3$DEATHS<quantile(df3$DEATHS)[2],'low_death',ifelse(df3$DEATHS<quantile(df3$DEATHS)[4],"mid_death",'high_death'))
-df3
+table(df3$death3)
 ```
 
 
@@ -212,13 +215,13 @@ quantile(gao$Fare)
 ```{r}
 gao$fare2 <- ifelse(gao$Fare<quantile(gao$Fare)[2],'low_fare', ifelse(gao$Fare<quantile(gao$Fare)[3],'mid_low_fare', ifelse(gao$Fare<quantile(gao$Fare)[4],'mid_high_fare', 'high_fare')))
 #this answers bullet 1 of question 18 by creating a categorical variable
-gao
+head(gao)
 ```
 
 ```{r}
 library(dplyr)
 gao$buyer <-case_when(gao$Age>=18 ~ "Bought Ticket", TRUE ~ "Minor")
-gao
+head(gao)
 ```
 
 
@@ -231,6 +234,6 @@ If you do not have a data, you can use [the titanic dataset](https://www.kaggle.
 ```{r}
 library(tidyverse)
 gao$farelowhigh <- ifelse(str_detect(gao$fare2,'low'),'low','high')
-gao
+head(gao)
 ```
 
