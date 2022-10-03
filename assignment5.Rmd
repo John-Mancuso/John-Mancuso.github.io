@@ -1,0 +1,128 @@
+
+---
+output: # rmarkdown::github_document
+  html_document:
+    theme: cerulean
+    toc: true
+  pdf_document: default
+  word_document: default
+title: "Assignment 5: Handle Missing Values"
+---
+
+***How to do it?***: 
+
+- Open the Rmarkdown file of this assignment ([link](assignment5.Rmd)) in Rstudio. 
+
+- Right under each **question**, insert  a code chunk (you can use the hotkey `Ctrl + Alt + I` to add a code chunk) and code the solution for the question. 
+
+- `Knit` the rmarkdown file (hotkey: `Ctrl + Alt + K`) to export an html.  
+
+-  Publish the html file to your Githiub Page. 
+
+***Submission***: Submit the link on Github of the assignment to Canvas. 
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(message = FALSE)
+```
+
+-------
+
+**The data:** 
+
+This assignment works with the Adult Census Data that can be downloaded at [this link.](https://bryantstats.github.io/math421/data/adult_census_missing.csv)
+
+-------
+
+**Questions**
+
+1. Use `read_csv` to import the data.  Show the number of NAs for each columns.   
+```{r}
+library(VIM)
+library(tidyverse)
+library(dplyr)
+
+df <- read_csv("https://bryantstats.github.io/math421/data/adult_census_missing.csv")
+#I commented that line out because it errored the knit
+```
+
+2. Using function `aggr` the VIM package to plot the number of NAs for each column. 
+```{r}
+aggr(df)
+```
+
+3. Find other forms of missing values. Hint: You can use the `table` function to check if there are suspicious categories (Unknown, for example) in a variable. What all other forms of missing values shown in the data. 
+```{r}
+table(df$workclass)
+#? Unknown Not Known
+table(df$education) 
+#Not Known Unknown
+table(df$marital.status) 
+#Not Known
+table(df$occupation) 
+#? Not Known Unknown
+table(df$relationship) 
+#Not Known Unknown
+table(df$race) 
+table(df$native.country)
+#? Not Known Unknown
+```
+
+4. Replace all the forms of missing values found to NA
+```{r}
+df1 <- df %>%
+  na_if('Unknown') %>%
+  na_if('Missing') %>%
+  na_if('Not Available') %>%
+  na_if('?') %>%
+  na_if('Not Known')
+```
+
+5. Replot the number of NAs for each column. 
+```{r}
+aggr(df1)
+```
+
+6. Approach 1 to handle NAs: remove all rows that have any NAs. Save the dataset after removing as a different data. The original data is unchanged (still have NAs).  How many rows left after removing?
+```{r}
+df2 = drop_na(df1)
+count(df2)
+```
+
+7. Approach 2 to handle NAs:  Fill all the NAs with the previous or next value. (Hint: Using `fill` function).  Save the dataset after filling as a different data. The original data is unchanged (still have NAs). 
+```{r}
+dd1 <- df1 %>%
+  fill(age, workclass, fnlwgt, education, education.num, marital.status, occupation, relationship, race, sex, capital.gain, capital.loss, hours.per.week, native.country, income, .direction = 'updown')
+head(dd1)
+```
+
+8. Approach 3 to handle NAs: For numeric variable, replace the NAs by the median.  For categorical variables, replace the NAs to the majority. 
+
+```{r}
+calc_mode <- function(x){
+  distinct_values <- unique(x)
+  distinct_tabulate <- tabulate(match(x, distinct_values))
+  distinct_values[which.max(distinct_tabulate)]
+}
+# I found this code to take mode with a calegorical variable
+dd2 <- df1 %>%
+  mutate(age = ifelse(is.na(age), median(age), age)) %>%
+  mutate(fnlwgt = ifelse(is.na(fnlwgt), median(fnlwgt), fnlwgt)) %>%
+  mutate(education.num = ifelse(is.na(education.num), median(education.num), education.num)) %>%
+  mutate(capital.gain = ifelse(is.na(capital.gain), median(capital.gain), capital.gain)) %>%
+  mutate(capital.loss = ifelse(is.na(capital.loss), median(capital.loss), capital.loss)) %>%
+  mutate(hours.per.week = ifelse(is.na(hours.per.week), median(hours.per.week), hours.per.week)) %>%
+  mutate(workclass = if_else(is.na(workclass), calc_mode(workclass),workclass)) %>%
+  mutate(education = if_else(is.na(education), calc_mode(education),education)) %>%
+  mutate(marital.status = if_else(is.na(marital.status), calc_mode(marital.status), marital.status)) %>%
+  mutate(occupation = if_else(is.na(occupation), calc_mode(occupation),occupation)) %>%
+  mutate(relationship = if_else(is.na(relationship), calc_mode(relationship), relationship)) %>%
+  mutate(race = if_else(is.na(race), calc_mode(race),race)) %>%
+  mutate(sex = if_else(is.na(sex), calc_mode(sex),sex)) %>%
+  mutate(native.country = if_else(is.na(native.country), calc_mode(native.country), native.country)) %>%
+  mutate(income = if_else(is.na(income), calc_mode(income),income))
+head(dd2)
+```
+
+
+
+

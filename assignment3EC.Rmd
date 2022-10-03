@@ -1,0 +1,49 @@
+Redo #16 & 17 in Assignment 3 using the Adult Census Data set
+
+16.  Find your own dataset, import it and implement the following functions on the data
+
+- head
+- str
+- names
+- mean, min, max
+- table
+- is.na
+- colSums
+- class
+- cor
+- by
+- ifelse
+- case_when
+
+```{r}
+library(tidyverse)
+library(dplyr)
+df = read.csv('adult_census.csv')
+head(df)
+```
+```{r}
+str(df)
+```
+```{r}
+names(df)
+```
+```{r}
+median(df$age)
+```
+```{r}
+mean(df$education.num)
+```
+```{r}
+max(df$capital.loss)
+```
+```{r}
+table(df$age)
+```
+```{r}
+df %>%
+  count(df$native.country)
+count(is.na(df$native.country) == TRUE)
+```
+
+
+
