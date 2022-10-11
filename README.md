@@ -12,4 +12,5 @@
 
 [Click here for Assignment 6](assignment6.html)
 
-[Click here for Assignment 7](assignment7.html) [Link to the plot](thing.png)
+[Click here for Assignment 7](assignment7.html) 
+        [Link to the plot](thing.png)
