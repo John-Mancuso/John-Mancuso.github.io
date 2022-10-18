@@ -40,9 +40,11 @@ max(df$capital.loss)
 table(df$age)
 ```
 ```{r}
-df %>%
-  count(df$native.country)
-count(is.na(df$native.country) == TRUE)
+sum(is.na(df$native.country))
+```
+```{r}
+df1 <- data.frame(df$age,df$education)
+colSums(df1$df.age)
 ```
 
 

@@ -14,3 +14,5 @@
 
 [Click here for Assignment 7](assignment7.html) 
 [Link to the plot for #7](thing.png)
+
+[Click here for Assignment 8](assignment8.html)
