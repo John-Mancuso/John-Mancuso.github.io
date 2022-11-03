@@ -25,4 +25,4 @@
 
 [Click here for Assignment 12](assignment12.html)
 
-[Click here for The Midterm](midterm.html)
+[Click here for The Midterm](midterm_toc.html)
