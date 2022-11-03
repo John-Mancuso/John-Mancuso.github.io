@@ -24,3 +24,5 @@
 [Click here for Assignment 11](assignment11.html)
 
 [Click here for Assignment 12](assignment12.html)
+
+[Click here for The Midterm](midterm.html)
