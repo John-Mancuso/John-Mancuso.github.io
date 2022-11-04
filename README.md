@@ -25,4 +25,6 @@
 
 [Click here for Assignment 12](assignment12.html)
 
-[Click here for The Midterm](midterm_toc.html)
+[Click here for the Midterm](midterm_toc.html)
+
+[Click here for the Midterm slides](midterm_presentation.html)

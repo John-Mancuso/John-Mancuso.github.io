@@ -77,7 +77,6 @@ library(knitr)
 library(gganimate)
 library(gifski)
 library(lubridate)
-library(knitr)
 library(gapminder)
 library(dplyr)
 library(recipes)
@@ -248,42 +247,40 @@ Continue with the data from part I.
 ```{r}
 df %>% ggplot()+
   geom_density(mapping = aes(x=age))+
-  labs(title = "Number of entrys by age")
+  labs(y = "proportion of entries",title = "Number of entrys by age", caption = "This graph shows where the entries lie in relation to age of the patient")
 ```
 ```{r}
-df %>% ggplot()+
+df %>% 
+  filter(tot<60000) %>%
+  ggplot()+
   geom_boxplot(mapping = aes(x=tot))+
-  labs(title = "boxplot of total cost")
-#Even though it is not visually informative, I found this interesting because
-#of how extreme the outliers are compared to the rest of the data.
+  labs(x = "total cost", title = "boxplot of total cost", caption = "boxplot of total cost to get an idea of what the cost ditribution looks like
+       (I removed totals above 60,000 to get a better view of the boxplot itself)")
 ```
 ```{r}
 df %>% 
   filter(sex == 1|sex == 2) %>%
   ggplot()+
-  geom_bar(mapping=aes(x=sex, fill=season), position = 'fill')+
-  labs(title = "Season of admission by sex(1 is male)")
+  geom_bar(mapping=aes(x=sex, fill=season), position = 'dodge')+
+  labs(x = "sex (1 is male 2 is female)",y = "number of patients",title = "Season of admission by sex(1 is male)", caption = "This shows us the ditribution of admissions by season to see if they are about even(they are)")
 #I found this interesting because the division by season seemed to have little
 #to no impact on either sex's admissions at large
 #I also removed the sex=9 value because the data dictionary never specified
 #what that is so I cannot derive meaningful results from it
 ```
 ```{r}
-df %>% ggplot()+geom_smooth(aes(x=age, y=log(tot)))+labs(title = "ln of price by age")
-#taking the natural log of the total price gives a much more realistic idea of 
-#how much each age pays.
+df %>% ggplot()+geom_smooth(aes(x=age, y=log(tot)))+labs(title = "ln of price by age", y = "ln(total cost)", caption = "taking the natural log of the total price gives a much more 
+realistic idea of how much each age pays relative to each other.")
 ```
 ```{r}
 df %>% 
   filter(sex == 1|sex == 2) %>%
   ggplot()+
   geom_smooth(mapping=aes(x=age,y=log(tot))) + facet_wrap(~sex)+
-  labs(title="ln of total cost by age, split by sex(1 is male)")
-#this shows the difference between cost by sex
+  labs(title="ln of total cost by age, split by sex",y = "ln(total cost)", caption = "this shows the difference between cost by sex, as you can see the early peak is higher for males around 13 years old")
 ```
 ```{r}
-df %>% ggplot()+geom_smooth(aes(x=los, y=log(tot)))+labs(title = "ln of price by length of stay")
-#this shows the correlation between length of stay and price
+df %>% ggplot()+geom_smooth(aes(x=los, y=log(tot)))+labs(title = "ln of price by length of stay", y = "ln(total cost)", x = "length of stay", caption = "this shows that baisically across the board, longer stay time means a higher price")
 ```
 ```{r}
 df %>% 
@@ -292,18 +289,17 @@ df %>%
   summarise(mtot = mean(tot)) %>% 
   ggplot()+
   geom_col(aes(x=sex, y=mtot), position = 'dodge')+
-  labs(title = "Average total cost by sex(1 is male)")
+  labs(title = "Average total cost by sex",y = "average total cost", x = "sex (1 = male, 2 = female)", caption = "this shows the median cost for each sex")
 ```
 ```{r}
 df %>% group_by(tot,dispub92)%>%
   summarise(mtot = mean(tot)) %>% 
   ggplot()+
   geom_col(aes(x=dispub92, y=mtot), position = 'dodge')+
-  labs(title = "Average total cost by reason for discharge")
-#6, transferred to be cared for at home
-#20, expired (dead)
-#4, discharged and transferred to an intermediate care facility
-#these reasons intuitively make sense of why they are the most costly
+  labs(title = "Average total cost by reason for discharge", x = "reason for discharge", y = "Average total cost", caption = "6, transferred to be cared for at home
+       20, expired (dead)
+       4, discharged and transferred to an intermediate care facility
+       these reasons intuitively make sense of why they are the most costly")
 ```
 ```{r}
 df %>% 
@@ -311,7 +307,7 @@ df %>%
   ggplot()+
   geom_bar(aes(x=los))+facet_wrap(~sex)+
   xlim(c(0,40))+
-  labs(title = "Average length of stay by sex(1 is male)")
+  labs(title = "Average length of stay by sex", x = "length of stay", caption = "this shows the distribution of length of stay broken up by sex, as you can see the peak around day 2 is significantly higher for female than male")
 #Female patients are typically discharged more quickly
 ```
 ```{r}
@@ -320,17 +316,15 @@ df %>%
   summarise(mlos = mean(los)) %>% 
   ggplot()+
   geom_col(aes(x=dispub92, y=mlos), position = 'dodge')+
-  labs(title = "Average length of stay by reason for discharge")
-#4 is transfer to an immediate care facility
-#1 is discharged and clear to go home
-#what this tells us is that hospitals on average hold people the longest when they
-#can cure a patient entirely, or when they need to hand off the patient to another
-#facility
+  labs(title = "Average length of stay by reason for discharge",x = "reason for discharge", y = "average length of stay", caption = "4 is transfer to an immediate care facility
+       1 is discharged and clear to go home
+       what this tells us is that hospitals on average hold people the longest when they
+can cure a patient entirely, or when they need to hand off the patient to another
+facility")
 ```
 
 2. Make an animation plot. 
 ```{r}
-df$date = (df$yoa*100)+df$moa
 df <- df %>%
   mutate(
     provider_name = case_when(
@@ -348,21 +342,22 @@ df <- df %>%
       provider == 7214 ~ "Women and Infants",
       provider == 7215 ~ "Bradley",
       provider == 7216 ~ "Butler"))
-d1 <- df %>% group_by(date,provider_name) %>% summarise(cost = sum(tot))
-d2 <- d1 %>% group_by(date) %>% mutate(rank=rank(-cost)) 
+d1 <- df %>% group_by(mod,provider_name) %>% summarise(cost = sum(tot))
+#write_csv(d1,'midterm_but_I_added_running_totals.csv')
+d1 <- read.csv('midterm_but_I_added_running_totals.csv')
+d2 <- d1 %>% group_by(mod) %>% mutate(rank=rank(-runcost)) 
 d3 <- d2 %>% filter(rank <= 5)
 
-a1 <- d3 %>% ggplot(aes(x=rank, y=cost, group=provider_name, fill=provider_name, label=provider_name)) + geom_col()+
-    geom_text(aes(y = cost, label = provider_name), hjust = 1.4)+ 
+a1 <- d3 %>% ggplot(aes(x=rank, y=runcost, group=provider_name, fill=provider_name, label="hospital")) + geom_col()+
+    geom_text(aes(y = runcost, label = provider_name), hjust = 1.4)+ 
     coord_flip(clip = "off", expand = FALSE) +scale_x_reverse()+
-    labs(title = 'Date(february 2015 = 1502) {closest_state}', x='', y='Total cost', fill='provider_name')+
+    labs(title = 'Month of discharge: {closest_state}', x='', y='Running Total of cost', fill='provider_name', caption = "this bar race shows how much each hospital has to pay each month")+
     theme(plot.title = element_text(hjust = 1, size = 22),
           axis.ticks.y = element_blank(),
           axis.text.y  = element_blank()) + 
-    transition_states(date)+
+    transition_states(mod)+
     ease_aes("cubic-in-out")
-animate(a1, nframes = 400)
-#the rhode Island hospital seems to be the most profitable constistantly
+animate(a1, nframes = 100)
 ```
 
 3. Write a paragraph to summarize the section and give your comments on the results. 
@@ -448,6 +443,11 @@ plot(model2)
 ```{r}
 plot(model3)
 ```
+```{r}
+results <- resamples(list('rpart2 model' = model2,
+                          'ranger model' = model3))
+bwplot(results)
+```
 
 5. What is your final selection for the model? Test the accuracy of your final model on the test data. 
 
@@ -521,6 +521,9 @@ cm1 <- confusionMatrix(data = pred, reference = df_test$target)
 cm1$overall[1]
 ```
 ```{r}
+  results <- resamples(list('rpart2 model' = model2,
+                            'ranger model' = model))
+  bwplot(results)
 #model 1, the ranger model, is better according to accuracy
 ```
 

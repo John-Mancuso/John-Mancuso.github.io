@@ -1,0 +1,285 @@
+---
+title: "Midterm Presentation"
+author: "John Mancuso"
+date: "2022-11-04"
+output: ioslides_presentation
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+library(haven)
+library(VIM)
+library(ggplot2)
+library(tidyverse)
+library(knitr)
+library(gganimate)
+library(gifski)
+library(lubridate)
+library(gapminder)
+library(dplyr)
+library(recipes)
+library(caret)
+library(rpart)
+library(rattle)
+library(randomForest)
+df <- read.csv('midterm.csv')
+df <- df %>%
+  mutate(
+    season = case_when(
+      moa %in% 9:11 ~ "Fall",
+      moa %in% c(12, 1, 2)  ~ "Winter",
+      moa %in% 3:5  ~ "Spring",
+      TRUE ~ "Summer"))
+```
+
+## Graph 1
+
+```{r,warning=FALSE,message=FALSE}
+df %>% ggplot()+
+  geom_density(mapping = aes(x=age))+
+  labs(y = "proportion of entries",title = "Number of entrys by age", caption = "This graph shows where the entries lie in relation to age of the patient")
+```
+
+## Graph 2
+
+```{r,warning=FALSE,message=FALSE}
+df %>% 
+  filter(tot<60000) %>%
+  ggplot()+
+  geom_boxplot(mapping = aes(x=tot))+
+  labs(x = "total cost", title = "boxplot of total cost", caption = "boxplot of total cost to get an idea of what the cost ditribution looks like
+       (I removed totals above 60,000 to get a better view of the boxplot itself)")
+```
+
+## Graph 3
+
+```{r,warning=FALSE,message=FALSE}
+df %>% ggplot()+geom_smooth(aes(x=age, y=log(tot)))+labs(title = "ln of price by age", y = "ln(total cost)", caption = "taking the natural log of the total price gives a much more 
+realistic idea of how much each age pays relative to each other.")
+```
+
+## Graph 4
+
+```{r,warning=FALSE,message=FALSE}
+df %>% ggplot()+geom_smooth(aes(x=los, y=log(tot)))+labs(title = "ln of price by length of stay", y = "ln(total cost)", x = "length of stay", caption = "this shows that baisically across the board, longer stay time means a higher price")
+```
+
+## Graph 5
+
+```{r,warning=FALSE,message=FALSE}
+df %>% 
+  filter(sex == 1|sex == 2) %>%
+  group_by(tot,sex)%>%
+  summarise(mtot = mean(tot)) %>% 
+  ggplot()+
+  geom_col(aes(x=sex, y=mtot), position = 'dodge')+
+  labs(title = "Average total cost by sex",y = "average total cost", x = "sex (1 = male, 2 = female)", caption = "this shows the median cost for each sex")
+```
+
+## Graph 6
+
+```{r,warning=FALSE,message=FALSE}
+df %>% 
+  filter(sex == 1|sex == 2) %>%
+  ggplot()+
+  geom_bar(aes(x=los))+facet_wrap(~sex)+
+  xlim(c(0,40))+
+  labs(title = "Average length of stay by sex", x = "length of stay", caption = "this shows the distribution of length of stay broken up by sex, as you can see the peak around day 2 is significantly higher for female than male")
+```
+
+## Graph 7
+
+```{r,warning=FALSE,message=FALSE}
+df %>% 
+  filter(sex == 1|sex == 2) %>%
+  ggplot()+
+  geom_smooth(mapping=aes(x=age,y=log(tot))) + facet_wrap(~sex)+
+  labs(title="ln of total cost by age, split by sex",y = "ln(total cost)", caption = "this shows the difference between cost by sex, as you can see the early peak is higher for males around 13 years old")
+```
+
+## Graph 8
+
+```{r,warning=FALSE,message=FALSE}
+df %>% 
+  filter(sex == 1|sex == 2) %>%
+  ggplot()+
+  geom_bar(mapping=aes(x=sex, fill=season), position = 'dodge')+
+  labs(x = "sex (1 is male 2 is female)",y = "number of patients",title = "Season of admission by sex(1 is male)", caption = "This shows us the ditribution of admissions by season to see if they are about even(they are)")
+```
+
+## Graph 9
+
+```{r,warning=FALSE,message=FALSE}
+df %>% group_by(tot,dispub92)%>%
+  summarise(mtot = mean(tot)) %>% 
+  ggplot()+
+  geom_col(aes(x=dispub92, y=mtot), position = 'dodge')+
+  labs(title = "Average total cost by reason for discharge", x = "reason for discharge", y = "Average total cost", caption = "6, transferred to be cared for at home
+       20, expired (dead)
+       4, discharged and transferred to an intermediate care facility
+       these reasons intuitively make sense of why they are the most costly")
+```
+
+## Graph 10
+
+```{r,warning=FALSE,message=FALSE}
+df %>%
+  group_by(los,dispub92)%>%
+  summarise(mlos = mean(los)) %>% 
+  ggplot()+
+  geom_col(aes(x=dispub92, y=mlos), position = 'dodge')+
+  labs(title = "Average length of stay by reason for discharge",x = "reason for discharge", y = "average length of stay", caption = "4 is transfer to an immediate care facility
+       1 is discharged and clear to go home
+       what this tells us is that hospitals on average hold people the longest when they
+can cure a patient entirely, or when they need to hand off the patient to another
+facility")
+```
+
+## Animated model
+
+```{r,message=FALSE,warning=FALSE}
+df <- df %>%
+  mutate(
+    provider_name = case_when(
+      provider == 7201 ~ "Newport",
+      provider == 7202 ~ "St.Joseph Health Services of RI",
+      provider == 7203 ~ "Memorial",
+      provider == 7204 ~ "Miriam",
+      provider == 7205 ~ "Rhode Island Hospital",
+      provider == 7206 ~ "Roger Williams",
+      provider == 7209 ~ "South County",
+      provider == 7210 ~ "Kent County",
+      provider == 7211 ~ "Westerly",
+      provider == 7212 ~ "Rehab of RI",
+      provider == 7213 ~ "Landmark Medical Center",
+      provider == 7214 ~ "Women and Infants",
+      provider == 7215 ~ "Bradley",
+      provider == 7216 ~ "Butler"))
+d1 <- df %>% group_by(mod,provider_name) %>% summarise(cost = sum(tot))
+#write_csv(d1,'midterm_but_I_added_running_totals.csv')
+d1 <- read.csv('midterm_but_I_added_running_totals.csv')
+d2 <- d1 %>% group_by(mod) %>% mutate(rank=rank(-runcost)) 
+d3 <- d2 %>% filter(rank <= 5)
+
+a1 <- d3 %>% ggplot(aes(x=rank, y=runcost, group=provider_name, fill=provider_name, label="hospital")) + geom_col()+
+    geom_text(aes(y = runcost, label = provider_name), hjust = 1.4)+ 
+    coord_flip(clip = "off", expand = FALSE) +scale_x_reverse()+
+    labs(title = 'Month of discharge: {closest_state}', x='', y='Running Total of cost', fill='provider_name', caption = "this bar race shows how much each hospital has to pay each month")+
+    theme(plot.title = element_text(hjust = 1, size = 22),
+          axis.ticks.y = element_blank(),
+          axis.text.y  = element_blank()) + 
+    transition_states(mod)+
+    ease_aes("cubic-in-out")
+animate(a1, nframes = 100)
+```
+
+## Part 3 rpart2 model
+
+```{r,warning=FALSE,message=FALSE}
+df <- read.csv('midterm.csv')
+df <- df %>% select("age","sex","raceethn","provider","moa","mod","admtype","campus", "los","tot")
+df$target = ifelse(df$tot<median(df$tot),'low','high')
+df <- df %>% 
+  mutate(sex = as.factor(sex),
+         moa = as.factor(moa),
+         mod = as.factor(mod),
+         target = as.factor(target))
+df <- df %>%
+  filter(!is.na(raceethn)&!is.na(admtype))
+df <- df %>% select(-tot)
+set.seed(2020)
+splitIndex <- createDataPartition(df$target, p = .10, 
+                                  list = FALSE)
+df_train <- df[ splitIndex,]
+df_test <- df[-splitIndex,]
+```
+
+```{r,message=FALSE,warning=FALSE}
+trControl = trainControl(method = "cv",
+                         number = 5)
+model2 <- train(target~., 
+               method = "rpart2",
+               data = df_train,
+               trControl = trControl)
+model3 <- train(target~., 
+               method = "ranger",
+               data = df_train,
+               trControl = trControl)
+plot(model2)
+```
+
+## ranger model
+
+```{r, message=FALSE,warning=FALSE}
+plot(model3)
+```
+
+## model comparison
+
+```{r,message=FALSE,warning=FALSE}
+results <- resamples(list('rpart2 model' = model2,
+                          'ranger model' = model3))
+bwplot(results)
+```
+
+## New model predicting sex
+
+```{r,message=FALSE,warning=FALSE}
+df <- read_csv('midterm.csv')
+df <- df %>% select("age","sex","raceethn","provider","moa","mod","admtype","campus", "los","tot") 
+df <- df %>% filter(sex<3)
+df <- df %>% rename(target = sex)
+df <- df %>% 
+  mutate(target = as.factor(target))
+df <- df %>%
+  filter(!is.na(raceethn)&!is.na(admtype))
+set.seed(2020)
+splitIndex <- createDataPartition(df$target, p = .10, 
+                                  list = FALSE)
+df_train <- df[ splitIndex,]
+df_test <- df[-splitIndex,]
+model <- rpart(target ~ ., data = df_train,
+               control = rpart.control(minsplit = 1, 
+                                      minbucket = 1, 
+                                      cp = 0.001))
+barplot(model$variable.importance)
+```
+
+## bad model!
+
+```{r,message=FALSE,warning=FALSE}
+fancyRpartPlot(model)
+```
+
+## model comparisons with good model 1
+
+```{r,message=FALSE,warning=FALSE}
+trControl = trainControl(method = "cv",
+                         number = 5)
+model <- train(target~., 
+               data = df_train,
+               method = "ranger",
+               trControl = trControl)
+
+model2 <- train(target~., 
+               method = "rpart2",
+               data = df_train,
+               trControl = trControl)
+plot(model)
+```
+
+## model comparisons with good model 2
+
+```{r,message=FALSE,warning=FALSE}
+plot(model2)
+```
+
+## model comparison with good models
+
+```{r,message=FALSE,warning=FALSE}
+results <- resamples(list('rpart2 model' = model2,
+                            'ranger model' = model))
+bwplot(results)
+```
+
+
