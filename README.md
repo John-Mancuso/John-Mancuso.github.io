@@ -30,3 +30,7 @@
 [Click here for the Midterm slides](midterm_presentation.html)
 
 [Click here for Assignment 13](assignment13.html)
+
+[Click here for Assignment 14](assignment14.html)
+
+[Click here for Assignment 15](assignment15.html)

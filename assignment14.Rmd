@@ -1,0 +1,182 @@
+
+---
+output: 
+  html_document:
+  pdf_document: default
+  word_document: default
+title: "Assignment 14: Twitters Mining with rtweet"
+---
+
+***How to do it?***: 
+
+- Open the Rmarkdown file of this assignment ([link](assignment14.Rmd)) in Rstudio. 
+
+- Right under each **question**, insert  a code chunk (you can use the hotkey `Ctrl + Alt + I` to add a code chunk) and code the solution for the question. 
+
+- `Knit` the rmarkdown file (hotkey: `Ctrl + Alt + K`) to export an html.  
+
+-  Publish the html file to your Githiub Page. 
+
+***Submission***: Submit the link on Github of the assignment to Canvas
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(message = FALSE)
+```
+
+
+[Sample Codes](https://bryantstats.github.io/math421/slides/16_text_mining_rtweet.html)
+
+-------
+```{r}
+library(rtweet) 
+library(tidytext)
+library(ggpubr) 
+library(tidyverse) 
+library(knitr)
+library(lubridate)
+library(emo)
+```
+
+1. Pick a keyword or hashtag. Download the data associated with the keyword/hashtag. Plot at least 5 plots to visualize the data associated with the keyword/hashtag. All plots should have titles and captions. 
+```{r,eval=FALSE}
+auth_setup_default()
+
+keyword_search = '#Dragonflight'
+
+df <- search_tweets(q = keyword_search, 
+                        n = Inf, # number of tweets
+                        include_rts = FALSE,
+                        `-filter` = "replies",
+                        lang = "en") %>% 
+  mutate(created_at = ymd_hms(format(created_at, tz = "US/Eastern")))
+
+write_csv(df,'twitterdata.csv')
+```
+
+```{r}
+df <- read_csv('twitterdata.csv')
+
+ts_plot(df, "hours") +
+  labs(x = NULL, y = NULL,
+       title = "Frequency of tweets by time",
+       subtitle = paste0(format(min(df$created_at), "%d %B %Y"), " to ", format(max(df$created_at),"%d %B %Y")),
+       caption = "Data collected from Twitter's REST API via rtweet") +
+  theme_minimal()
+```
+```{r}
+df %>% 
+  unnest_tokens(mentions, text, "tweets", to_lower = FALSE) %>%
+  filter(str_detect(mentions, "^@")) %>%  
+  count(mentions, sort = TRUE) %>%
+  head(10) %>% 
+  ggplot(aes(x = n, y = reorder(mentions, n)))+
+  geom_col()+
+  labs(title = 'Most @ mentions',x = '# of mentions', y = '')
+```
+```{r}
+df %>% 
+  filter(created_at>='2022-11-14') %>% 
+  unnest_tokens(output = hashtag, input = text, token = "tweets") %>%
+  filter(!hashtag %in% c("#dragonflight"), str_detect(hashtag, "^#")) %>% 
+  count(hashtag, sort = TRUE) %>%
+  head(5) %>% 
+  ggplot(aes(x = n, y = reorder(hashtag, n)))+
+  geom_col()+
+  labs(x = 'Frequency', y = '', title = 'other # mentions')
+```
+```{r}
+df %>%
+  mutate(emoji = ji_extract_all(text)) %>%
+  unnest(cols = c(emoji)) %>%
+  count(emoji, sort = TRUE) %>%
+  head(5) %>% 
+  ggplot(aes(y=reorder(emoji,n), x=n)) +
+  geom_col()+
+  theme(axis.text.y = element_text(size = 40))+
+  labs(title = 'Top Emoji in the tweets', y = '')
+```
+```{r}
+df %>%
+    unnest_tokens(input = text, output = word) %>% 
+    anti_join(get_stopwords()) %>% 
+    count(word, sort = TRUE) %>%
+    inner_join(get_sentiments("nrc")) %>%
+    filter(!is.na(sentiment)) %>%
+    count(sentiment, sort = TRUE) %>% 
+    mutate(n = n/sum(n)) %>% 
+    ggplot(aes(y= reorder(sentiment, n), x = n))+geom_col()+
+    labs(y='Relative Frequency', x ='', title = "sentiment frequencies")
+```
+
+
+2. Choose a location then pick a trending keyword/hashtag in the location. Download the data associated with the keyword/hashtag. Plot at least 5 plots to visualize the data associated with the keyword/hashtag. All plots should have titles and captions. 
+```{r eval=FALSE}
+get_trends('Providence')
+#Anthony Brown was number 5 when doing this
+```
+```{r,eval=FALSE}
+keyword_search = 'Anthony Brown'
+
+df <- search_tweets(q = keyword_search, 
+                        n = Inf, # number of tweets
+                        include_rts = FALSE,
+                        `-filter` = "replies",
+                        lang = "en") %>% 
+  mutate(created_at = ymd_hms(format(created_at, tz = "US/Eastern")))
+
+write_csv(df, 'twitterdata1.csv')
+```
+
+```{r}
+df <- read.csv('twitterdata1.csv')
+
+ts_plot(df, "hours") +
+  labs(x = NULL, y = NULL,
+       title = "Frequency of tweets by time",
+       caption = "Data collected from Twitter's REST API via rtweet") +
+  theme_minimal()
+```
+```{r}
+df %>% 
+  unnest_tokens(mentions, text, "tweets", to_lower = FALSE) %>%
+  filter(str_detect(mentions, "^@")) %>%  
+  count(mentions, sort = TRUE) %>%
+  head(10) %>% 
+  ggplot(aes(x = n, y = reorder(mentions, n)))+
+  geom_col()+
+  labs(title = 'Top 10 mentions in the tweets', y = '')
+```
+```{r}
+df %>% 
+  unnest_tokens(output = hashtag, input = text, token = "tweets") %>%
+  filter(str_detect(hashtag, "^#")) %>% 
+  count(hashtag, sort = TRUE) %>%
+  head(5) %>% 
+  ggplot(aes(x = n, y = reorder(hashtag, n)))+
+  geom_col()+
+  labs(x = 'Frequency', title = 'top #s referenced')
+```
+```{r}
+df %>%
+  mutate(emoji = ji_extract_all(text)) %>%
+  unnest(cols = c(emoji)) %>%
+  count(emoji, sort = TRUE) %>%
+  head(5) %>% 
+  ggplot(aes(y=reorder(emoji,n), x=n)) +
+  geom_col()+
+  theme(axis.text.y = element_text(size = 40))+
+  labs(title = 'Top Emoji in the tweets', y = '')
+```
+```{r}
+df %>%
+    unnest_tokens(input = text, output = word) %>% 
+    anti_join(get_stopwords()) %>% 
+    count(word, sort = TRUE) %>%
+    inner_join(get_sentiments("nrc")) %>%
+    filter(!is.na(sentiment)) %>%
+    count(sentiment, sort = TRUE) %>% 
+    mutate(n = n/sum(n)) %>% 
+    ggplot(aes(y= reorder(sentiment, n), x = n))+geom_col()+
+    labs(y='Relative Frequency', x ='', title = "sentiment frequencies")
+```
+
